@@ -1,5 +1,53 @@
 if myHero.charName ~= "Gnar" then return end
 
+-- [ update ]
+do
+    
+    local Version = 1
+    
+    local Files = {
+        Lua = {
+            Path = SCRIPT_PATH,
+            Name = "Gnar.lua",
+            Url = "https://raw.githubusercontent.com/miragessee/GoSGnar/master/Gnar.lua"
+        },
+        Version = {
+            Path = SCRIPT_PATH,
+            Name = "miragesgnar.version",
+            Url = "https://raw.githubusercontent.com/miragessee/GoSGnar/master/miragesgnar.version"
+        }
+    }
+    
+    local function AutoUpdate()
+        
+        local function DownloadFile(url, path, fileName)
+            DownloadFileAsync(url, path .. fileName, function() end)
+            while not FileExist(path .. fileName) do end
+        end
+        
+        local function ReadFile(path, fileName)
+            local file = io.open(path .. fileName, "r")
+            local result = file:read()
+            file:close()
+            return result
+        end
+        
+        DownloadFile(Files.Version.Url, Files.Version.Path, Files.Version.Name)
+        
+        local NewVersion = tonumber(ReadFile(Files.Version.Path, Files.Version.Name))
+        if NewVersion > Version then
+            DownloadFile(Files.Lua.Url, Files.Lua.Path, Files.Lua.Name)
+            print(Files.Version.Name .. ": Updated to " .. tostring(NewVersion) .. ". Please Reload with 2x F6")
+        else
+            print(Files.Version.Name .. ": No Updates Found")
+        end
+    
+    end
+    
+    AutoUpdate()
+
+end
+
 local _atan = math.atan2
 local _min = math.min
 local _abs = math.abs
@@ -220,22 +268,12 @@ function QDmg()
     end
 end
 
-function WDmg()
-    if myHero:GetSpellData(_Q).level == 0 then
-        local Dmg1 = (({25, 45, 65, 85, 105})[1] + myHero.totalDamage)
-        return Dmg1
-    else
-        local Dmg1 = (({25, 45, 65, 85, 105})[myHero:GetSpellData(_Q).level] + myHero.totalDamage)
-        return Dmg1
-    end
-end
-
 function EDmg()
     if myHero:GetSpellData(_E).level == 0 then
-        local Dmg1 = (({60, 90, 120, 150, 180})[1] + 0.70 * myHero.bonusDamage)
+        local Dmg1 = (({50, 85, 120, 155, 190})[1] + 0.06 * myHero.maxHealth)
         return Dmg1
     else
-        local Dmg1 = (({60, 90, 120, 150, 180})[myHero:GetSpellData(_E).level] + 0.70 * myHero.bonusDamage)
+        local Dmg1 = (({50, 85, 120, 155, 190})[myHero:GetSpellData(_E).level] + 0.06 * myHero.maxHealth)
         return Dmg1
     end
 end
@@ -310,6 +348,16 @@ function IsImmune(unit)
 end
 
 class "Gnar"
+
+function Gnar:WDmg(target)
+    if myHero:GetSpellData(_W).level == 0 then
+        local Dmg1 = (({10, 20, 30, 40, 50})[1] + 0.14 * target.maxHealth)
+        return Dmg1
+    else
+        local Dmg1 = (({10, 20, 30, 40, 50})[myHero:GetSpellData(_W).level] + 0.14 * target.maxHealth)
+        return Dmg1
+    end
+end
 
 function Gnar:OnProcessSpell()
     for i = 1, #units do
@@ -476,7 +524,7 @@ function VectorPointProjectionOnLineSegment(v1, v2, v)
     return pointSegment, pointLine, isOnSegment
 end
 
-local Version, Author, LVersion = "v1", "miragessee", "8.19"
+local Version, Author, LVersion = "v1", "miragessee", "8.24"
 
 function Gnar:LoadMenu()
     
@@ -495,12 +543,14 @@ function Gnar:LoadMenu()
     self.GnarMenu:MenuElement({id = "Combo", name = "Combo", type = MENU})
     self.GnarMenu.Combo:MenuElement({id = "UseQ", name = "Use Q", value = true, leftIcon = QIcon})
     self.GnarMenu.Combo:MenuElement({id = "UseW", name = "Use W", value = true, leftIcon = WIcon})
+    self.GnarMenu.Combo:MenuElement({id = "UseRW", name = "Use R try is enemy side wall", value = true, leftIcon = RIcon})
     self.GnarMenu.Combo:MenuElement({id = "UseR", name = "Use R is enemy killable", value = true, leftIcon = RIcon})
     
     self.GnarMenu:MenuElement({id = "KillSteal", name = "KillSteal", type = MENU})
     self.GnarMenu.KillSteal:MenuElement({id = "UseIgnite", name = "Use Ignite", value = true, leftIcon = IgniteIcon})
     self.GnarMenu.KillSteal:MenuElement({id = "UseQ", name = "Use Q", value = true, leftIcon = QIcon})
     self.GnarMenu.KillSteal:MenuElement({id = "UseW", name = "Use W", value = true, leftIcon = WIcon})
+    self.GnarMenu.KillSteal:MenuElement({id = "UseE", name = "Use E", value = true, leftIcon = EIcon})
     self.GnarMenu.KillSteal:MenuElement({id = "UseR", name = "Use R", value = true, leftIcon = RIcon})
     
     self.GnarMenu:MenuElement({id = "AutoLevel", name = "AutoLevel", type = MENU})
@@ -511,10 +561,11 @@ function Gnar:LoadMenu()
     
     self.GnarMenu:MenuElement({id = "Drawings", name = "Drawings", type = MENU})
     self.GnarMenu.Drawings:MenuElement({id = "DrawQ", name = "Draw Q Range", value = true})
-    self.GnarMenu.Drawings:MenuElement({id = "DrawW", name = "Draw W Range", value = false})
+    self.GnarMenu.Drawings:MenuElement({id = "DrawW", name = "Draw Big W Range", value = true})
     self.GnarMenu.Drawings:MenuElement({id = "DrawE", name = "Draw E Range", value = true})
     self.GnarMenu.Drawings:MenuElement({id = "DrawR", name = "Draw R Range", value = true})
     self.GnarMenu.Drawings:MenuElement({id = "DrawAA", name = "Draw Killable AAs", value = false})
+    self.GnarMenu.Drawings:MenuElement({id = "DrawKS", name = "Draw Killable Skills", value = true})
     self.GnarMenu.Drawings:MenuElement({id = "DrawJng", name = "Draw Jungler Info", value = true})
     
     self.GnarMenu:MenuElement({id = "blank", type = SPACE, name = ""})
@@ -736,7 +787,7 @@ function Gnar:KillSteal()
     for i, enemy in pairs(GetEnemyHeroes()) do
         if self.GnarMenu.KillSteal.UseIgnite:Value() then
             local IgniteDmg = (55 + 25 * myHero.levelData.lvl)
-            if ValidTarget(enemy, 600) and enemy.health + enemy.shieldAD < IgniteDmg then
+            if ValidTarget(enemy, 600) and enemy.health + enemy.hpRegen < IgniteDmg then
                 if myHero:GetSpellData(SUMMONER_1).name == "SummonerDot" and IsReady(SUMMONER_1) then
                     Control.CastSpell(HK_SUMMONER_1, enemy)
                 elseif myHero:GetSpellData(SUMMONER_2).name == "SummonerDot" and IsReady(SUMMONER_2) then
@@ -757,8 +808,23 @@ function Gnar:KillSteal()
     if self.GnarMenu.KillSteal.UseW:Value() then
         if IsReady(_W) then
             for i, enemy in pairs(GetEnemyHeroes()) do
-                if ValidTarget(enemy, GnarBigW.range) and GetSpellWName() == "GnarBigW" and enemy.health < WDmg() then
+                if ValidTarget(enemy, GnarBigW.range) and GetSpellWName() == "GnarBigW" and enemy.health < self:WDmg(enemy) then
                     LocalControlCastSpell(HK_W, enemy)
+                end
+            end
+        end
+    end
+    if self.GnarMenu.KillSteal.UseE:Value() then
+        if IsReady(_E) then
+            for i, enemy in pairs(GetEnemyHeroes()) do
+                if GetSpellEName() == "GnarE" then
+                    if ValidTarget(enemy, GnarE.range) and enemy.health < EDmg() then
+                        LocalControlCastSpell(HK_E, enemy)
+                    end
+                else
+                    if ValidTarget(enemy, GnarBigE.range) and enemy.health < EDmg() then
+                        LocalControlCastSpell(HK_E, enemy)
+                    end
                 end
             end
         end
@@ -790,7 +856,7 @@ function Gnar:Harass()
                         end
                     end
                     if ValidTarget(targetQ, GnarBigQ.range) and GetSpellQName() == "GnarBigQ" then
-                        local hitChance, aimPosition = HPred:GetHitchance(myHero.pos, targetQ, GnarQ.range, GnarQ.delay, GnarQ.speed, GnarQ.radius, true)
+                        local hitChance, aimPosition = HPred:GetHitchance(myHero.pos, targetQ, GnarBigQ.range, GnarBigQ.delay, GnarBigQ.speed, GnarBigQ.radius, true)
                         if hitChance and hitChance >= 2 then
                             self:CastQ(targetQ, aimPosition)
                         end
@@ -804,12 +870,24 @@ function Gnar:Harass()
         if not IsImmune(targetW) then
             if self.GnarMenu.Harass.UseW:Value() then
                 if IsReady(_W) and GetSpellWName() == "GnarBigW" then
-                    if ValidTarget(targetW, GnarBigW.range) then
-                        LocalControlCastSpell(HK_W, targetW)
+                    if ValidTarget(targetW, GnarBigW.range) and GetSpellWName() == "GnarBigW" then
+                        local hitChance, aimPosition = HPred:GetHitchance(myHero.pos, targetW, GnarBigW.range, GnarBigW.delay, GnarBigW.speed, GnarBigW.radius, false)
+                        if hitChance and hitChance >= 2 then
+                            self:CastW(targetW, aimPosition)
+                        end
                     end
                 end
             end
         end
+    end
+end
+
+function GetBestGnarRPos()
+    local radius = GnarR.radius
+    for i = 0, 36, 1 do
+        local angle = 2 * math.pi / 36 * i
+        local position = Vector(myHero.pos.x + radius * math.cos(angle), 0,  myHero.pos.z + radius * math.sin(angle))
+        if MapPosition:inWall(position) then return position end
     end
 end
 
@@ -821,8 +899,16 @@ function Gnar:CastQ(target, EcastPos)
     end
 end
 
-function Gnar:Combo()
+function Gnar:CastW(target, EcastPos)
+    if LocalGameTimer() - OnWaypoint(target).time > 0.05 and (LocalGameTimer() - OnWaypoint(target).time < 0.125 or LocalGameTimer() - OnWaypoint(target).time > 1.25) then
+        if GetDistance(myHero.pos, EcastPos) <= GnarBigW.range then
+            LocalControlCastSpell(HK_W, EcastPos)
+        end
+    end
+end
 
+function Gnar:Combo()
+    
     local targetQ = GOS:GetTarget(GnarQ.range, "AD")
     local targetW = GOS:GetTarget(GnarBigW.range, "AD")
     local targetR = GOS:GetTarget(GnarR.range, "AD")
@@ -838,7 +924,7 @@ function Gnar:Combo()
                         end
                     end
                     if ValidTarget(targetQ, GnarBigQ.range) and GetSpellQName() == "GnarBigQ" then
-                        local hitChance, aimPosition = HPred:GetHitchance(myHero.pos, targetQ, GnarQ.range, GnarQ.delay, GnarQ.speed, GnarQ.radius, true)
+                        local hitChance, aimPosition = HPred:GetHitchance(myHero.pos, targetQ, GnarBigQ.range, GnarBigQ.delay, GnarBigQ.speed, GnarBigQ.radius, true)
                         if hitChance and hitChance >= 2 then
                             self:CastQ(targetQ, aimPosition)
                         end
@@ -852,14 +938,17 @@ function Gnar:Combo()
         if not IsImmune(targetW) then
             if self.GnarMenu.Combo.UseW:Value() then
                 if IsReady(_W) and GetSpellWName() == "GnarBigW" then
-                    if ValidTarget(targetW, GnarBigW.range) then
-                        LocalControlCastSpell(HK_W, targetW)
+                    if ValidTarget(targetW, GnarBigW.range) and GetSpellWName() == "GnarBigW" then
+                        local hitChance, aimPosition = HPred:GetHitchance(myHero.pos, targetW, GnarBigW.range, GnarBigW.delay, GnarBigW.speed, GnarBigW.radius, false)
+                        if hitChance and hitChance >= 2 then
+                            self:CastW(targetW, aimPosition)
+                        end
                     end
                 end
             end
         end
     end
-
+    
     if targetR then
         if not IsImmune(targetR) then
             if self.GnarMenu.Combo.UseR:Value() then
@@ -871,9 +960,93 @@ function Gnar:Combo()
             end
         end
     end
+
+    if targetR then
+        if not IsImmune(targetR) then
+            if self.GnarMenu.Combo.UseRW:Value() then
+                if IsReady(_R) then
+                    if ValidTarget(targetR, GnarR.range) then
+                        --print(GetBestGnarRPos())
+                        LocalControlCastSpell(HK_R, GetBestGnarRPos())
+                    end
+                end
+            end
+        end
+    end
 end
 
 function Gnar:Draw()
+    if myHero.dead then return end
+    
+    if GetSpellQName() == "GnarQ" then
+        if self.GnarMenu.Drawings.DrawQ:Value() then
+            Draw.Circle(myHero.pos, GnarQ.range, 1, Draw.Color(255, 0, 191, 255))
+        end
+    else
+        if self.GnarMenu.Drawings.DrawQ:Value() then
+            Draw.Circle(myHero.pos, GnarBigQ.range, 1, Draw.Color(255, 0, 191, 255))
+        end
+    end
+    
+    if self.GnarMenu.Drawings.DrawW:Value() then
+        Draw.Circle(myHero.pos, GnarBigW.range, 1, Draw.Color(255, 65, 105, 225))
+    end
+    
+    if GetSpellEName() == "GnarE" then
+        if self.GnarMenu.Drawings.DrawE:Value() then
+            Draw.Circle(myHero.pos, GnarE.range, 1, Draw.Color(255, 30, 144, 255))
+        end
+    else
+        if self.GnarMenu.Drawings.DrawW:Value() then
+            Draw.Circle(myHero.pos, GnarBigE.range, 1, Draw.Color(255, 30, 144, 255))
+        end
+    end
+    
+    if self.GnarMenu.Drawings.DrawR:Value() then Draw.Circle(myHero.pos, GnarR.range, 1, Draw.Color(255, 0, 0, 255)) end
+    
+    for i, enemy in pairs(GetEnemyHeroes()) do
+        if self.GnarMenu.Drawings.DrawJng:Value() then
+            if enemy:GetSpellData(SUMMONER_1).name == "SummonerSmite" or enemy:GetSpellData(SUMMONER_2).name == "SummonerSmite" then
+                Smite = true
+            else
+                Smite = false
+            end
+            if Smite then
+                if enemy.alive then
+                    if ValidTarget(enemy) then
+                        if GetDistance(myHero.pos, enemy.pos) > 3000 then
+                            Draw.Text("Jungler: Visible", 17, myHero.pos2D.x - 45, myHero.pos2D.y + 10, Draw.Color(0xFF32CD32))
+                        else
+                            Draw.Text("Jungler: Near", 17, myHero.pos2D.x - 43, myHero.pos2D.y + 10, Draw.Color(0xFFFF0000))
+                        end
+                    else
+                        Draw.Text("Jungler: Invisible", 17, myHero.pos2D.x - 55, myHero.pos2D.y + 10, Draw.Color(0xFFFFD700))
+                    end
+                else
+                    Draw.Text("Jungler: Dead", 17, myHero.pos2D.x - 45, myHero.pos2D.y + 10, Draw.Color(0xFF32CD32))
+                end
+            end
+        end
+        if self.GnarMenu.Drawings.DrawAA:Value() then
+            if ValidTarget(enemy) then
+                AALeft = enemy.health / myHero.totalDamage
+                Draw.Text("AA Left: " .. tostring(math.ceil(AALeft)), 17, enemy.pos2D.x - 38, enemy.pos2D.y + 10, Draw.Color(0xFF00BFFF))
+            end
+        end
+        if self.GnarMenu.Drawings.DrawKS:Value() then
+            if ValidTarget(enemy) then
+                if enemy.health < (QDmg()) then
+                    Draw.Text("Killable Skills (Q): ", 25, enemy.pos2D.x - 38, enemy.pos2D.y + 10, Draw.Color(0xFFFF0000))
+                elseif enemy.health < (QDmg() + self:WDmg(enemy)) then
+                    Draw.Text("Killable Skills (Q+W): ", 25, enemy.pos2D.x - 38, enemy.pos2D.y + 10, Draw.Color(0xFFFF0000))
+                elseif enemy.health < (QDmg() + self:WDmg(enemy) + EDmg()) then
+                    Draw.Text("Killable Skills (Q+W+E): ", 25, enemy.pos2D.x - 38, enemy.pos2D.y + 10, Draw.Color(0xFFFF0000))
+                elseif enemy.health < (QDmg() + self:WDmg(enemy) + EDmg() + RDmg()) then
+                    Draw.Text("Killable Skills (Q+W+E+R): ", 25, enemy.pos2D.x - 38, enemy.pos2D.y + 10, Draw.Color(0xFFFF0000))
+                end
+            end
+        end
+    end
 end
 
 function OnLoad()
